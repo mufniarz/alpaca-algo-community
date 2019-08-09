@@ -140,6 +140,37 @@ class Clock(object):
             print('run ')
             return True
         return False
+    
+    def duringMarketHoursRunPerMinute(self, timezone='America/New_York', second=1):
+        now = pd.Timestamp.now(tz=timezone)
+        nextOpen = self.next_open
+        nextClose = self.next_close
+        if( now.hour >= nextOpen.hour and
+            now.hour <= nextClose.hour and
+            now.second == second):
+            if ((nextClose.hour == now.hour and
+                nextClose.minute < now.minute) or
+                (nextOpen.hour == now.hour and
+                nextOpen.minute > now.minute)):
+                return False
+            return True
+        return False
+    
+    def duringMarketHoursRunPerHour(self, timezone='America/New_York', minute=1, second=1):
+        now = pd.Timestamp.now(tz=timezone)
+        nextOpen = self.next_open
+        nextClose = self.next_close
+        if( now.hour >= nextOpen.hour and
+            now.hour <= nextClose.hour and
+            now.minute == minute and
+            now.second == second):
+            if ((nextClose.hour == now.hour and
+                nextClose.minute < now.minute) or
+                (nextOpen.hour == now.hour and
+                nextOpen.minute > now.minute)):
+                return False
+            return True
+        return False
         
     def beforeMarketClose(self, timezone='America/New_York', hour=0, minute=0, second=0):
         now = pd.Timestamp.now(tz=timezone)
