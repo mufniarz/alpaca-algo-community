@@ -13,30 +13,58 @@ class Account(object):
     which would inhibit an account from placing any further day-trades.
     '''
     def __init__(
-        self, 
-        id, 
-        status, 
-        currency, 
-        cash, 
-        cash_withdrawable, 
-        portfolio_value, 
-        pattern_day_trader, 
-        trading_blocked, 
-        transfers_blocked, 
-        account_blocked, 
-        created_at):
+        self,
+        account_blocked,
+        buying_power,
+        cash,
+        created_at,
+        currency,
+        daytrade_count,
+        daytrading_buying_power,
+        equity,
+        id,
+        initial_margin,
+        last_equity,
+        last_maintenance_margin,
+        long_market_value,
+        maintenance_margin,
+        multiplier,
+        pattern_day_trader,
+        portfolio_value,
+        regt_buying_power,
+        short_market_value,
+        shorting_enabled,
+        sma,
+        status,
+        trade_suspended_by_user,
+        trading_blocked,
+        transfers_blocked):
         """Return a new Account object."""
-        self.id = id
-        self.status = status
-        self.currency = currency
+        self.account_blocked = account_blocked
+        self.buying_power = buying_power
         self.cash = cash
-        self.cash_withdrawable = cash_withdrawable
-        self.portfolio_value = portfolio_value
+        self.created_at = created_at
+        self.currency = currency
+        self.daytrade_count = daytrade_count
+        self.daytrading_buying_power = daytrading_buying_power
+        self.equity = equity
+        self.id = id
+        self.initial_margin = initial_margin
+        self.last_equity = last_equity
+        self.last_maintenance_margin = last_maintenance_margin
+        self.long_market_value = long_market_value
+        self.maintenance_margin = maintenance_margin
+        self.multiplier = multiplier
         self.pattern_day_trader = pattern_day_trader
+        self.portfolio_value = portfolio_value
+        self.regt_buying_power = regt_buying_power
+        self.short_market_value = short_market_value
+        self.shorting_enabled = shorting_enabled
+        self.sma = sma
+        self.status = status
+        self.trade_suspended_by_user = trade_suspended_by_user
         self.trading_blocked = trading_blocked
         self.transfers_blocked = transfers_blocked
-        self.account_blocked = account_blocked
-        self.created_at = created_at
 
 
     def canDayTrade(self):
@@ -58,7 +86,6 @@ class Asset(object):
     Assets are sorted by asset class, exchange and symbol. Some assets are only available for data consumption via 
     Polygon, and are not tradable with Alpaca. These assets will be marked with the flag tradable=false.
     '''
-
     def __init__(
         self, 
         id,
@@ -66,7 +93,10 @@ class Asset(object):
         exchange,
         symbol,
         status,
-        tradable):
+        tradable,
+        marginable,
+        shortable,
+        easy_to_borrow):
         """Return a new Asset object."""
         self.id = id
         self.asset_class = asset_class
@@ -74,6 +104,9 @@ class Asset(object):
         self.symbol = symbol
         self.status = status
         self.tradable = tradable
+        self.marginable = marginable
+        self.shortable = shortable
+        self.easy_to_borrow = easy_to_borrow
 
 
     def __str__(self):
@@ -124,20 +157,20 @@ class Clock(object):
     def afterMarketClose(self, timezone='America/New_York', hour=0, minute=0, second=0):
         now = pd.Timestamp.now(tz=timezone)
         nextClose = self.next_close
-        if( now.hour == nextClose.hour + hour and 
+        if( now.day == nextClose.day and
+            now.hour == nextClose.hour + hour and 
             now.minute == nextClose.minute + minute and 
             now.second == nextClose.second + second):
-            print('run ')
             return True
         return False
         
     def afterMarketOpen(self, timezone='America/New_York', hour=0, minute=0, second=0):
         now = pd.Timestamp.now(tz=timezone)
         nextOpen = self.next_open
-        if( now.hour == nextOpen.hour + hour and 
+        if( now.day == nextOpen.day and
+            now.hour == nextOpen.hour + hour and 
             now.minute == nextOpen.minute + minute and 
             now.second == nextOpen.second + second):
-            print('run ')
             return True
         return False
     
@@ -145,13 +178,21 @@ class Clock(object):
         now = pd.Timestamp.now(tz=timezone)
         nextOpen = self.next_open
         nextClose = self.next_close
-        if( now.hour >= nextOpen.hour and
+        if( now.day == nextOpen.day and
+            now.hour >= nextOpen.hour and
             now.hour <= nextClose.hour and
             now.second == second):
             if ((nextClose.hour == now.hour and
                 nextClose.minute < now.minute) or
                 (nextOpen.hour == now.hour and
                 nextOpen.minute > now.minute)):
+                return False
+            if ((nextClose.hour == now.hour and
+                nextClose.minute == now.minute and
+                nextClose.second < second) or
+                (nextOpen.hour == now.hour and
+                nextOpen.minute == now.minute and
+                nextOpen.second > second)):
                 return False
             return True
         return False
@@ -160,7 +201,8 @@ class Clock(object):
         now = pd.Timestamp.now(tz=timezone)
         nextOpen = self.next_open
         nextClose = self.next_close
-        if( now.hour >= nextOpen.hour and
+        if( now.day == nextOpen.day and
+            now.hour >= nextOpen.hour and
             now.hour <= nextClose.hour and
             now.minute == minute and
             now.second == second):
@@ -175,33 +217,32 @@ class Clock(object):
     def beforeMarketClose(self, timezone='America/New_York', hour=0, minute=0, second=0):
         now = pd.Timestamp.now(tz=timezone)
         nextClose = self.next_close
-        if( now.hour == nextClose.hour - hour and 
+        if( now.day == nextClose.day and
+            now.hour == nextClose.hour - hour and 
             now.minute == nextClose.minute - minute and 
             now.second == nextClose.second - second):
-            print('run ')
             return True
         return False
         
     def beforeMarketOpen(self, timezone='America/New_York', hour=0, minute=0, second=0):
         now = pd.Timestamp.now(tz=timezone)
         nextOpen = self.next_open
-        if( now.hour == nextOpen.hour - hour and 
+        if( now.day == nextOpen.day and
+            now.hour == nextOpen.hour - hour and 
             now.minute == nextOpen.minute - minute and 
             now.second == nextOpen.second - second):
-            print('run ')
             return True
         return False
         
-    # def testHours(self, timezone='America/New_York', hour=0, minute=0, second=0):
-    #     now = pd.Timestamp.now(tz=timezone)
-    #     if( now.hour == now.hour - hour and 
-    #         now.minute == now.minute - minute and 
-    #         now.second == now.second - second):
-    #         print('run ')
-    #         return True
-    #     #         Todo
-    #     print('done')
-    #     return False
+    def testHours(self, timezone='America/New_York', hour=0, minute=0, second=0):
+        now = pd.Timestamp.now(tz=timezone)
+        if( now.hour == now.hour - hour and 
+            now.minute == now.minute - minute and 
+            now.second == now.second - second):
+            print('run ')
+            return True
+        print('done')
+        return False
 
 
     def __str__(self):
@@ -280,6 +321,7 @@ class Order(object):
         stop_price,
         filled_avg_price,
         status,
+        extended_hours,
         api):
         """Return a new Order object."""
         self.id = id
@@ -303,6 +345,7 @@ class Order(object):
         self.stop_price = stop_price
         self.filled_avg_price = filled_avg_price
         self.status = status
+        self.extended_hours = extended_hours
         self.api = api
 
 
