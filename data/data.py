@@ -23,20 +23,34 @@ class Data(object):
 
 
     def requestAccount(self):
-        account = self.api.get_account()
-        acct = Account(
-            account.id,
-            account.status,
-            account.currency,
-            account.cash,
-            account.cash_withdrawable,
-            account.portfolio_value,
-            account.pattern_day_trader,
-            account.trading_blocked,
-            account.transfers_blocked,
-            account.account_blocked,
-            account.created_at)
-        return acct
+        a = self.api.get_account()
+        account = Account(
+            a.account_blocked,
+            a.buying_power,
+            a.cash,
+            a.created_at,
+            a.currency,
+            a.daytrade_count,
+            a.daytrading_buying_power,
+            a.equity,
+            a.id,
+            a.initial_margin,
+            a.last_equity,
+            a.last_maintenance_margin,
+            a.long_market_value,
+            a.maintenance_margin,
+            a.multiplier,
+            a.pattern_day_trader,
+            a.portfolio_value,
+            a.regt_buying_power,
+            a.short_market_value,
+            a.shorting_enabled,
+            a.sma,
+            a.status,
+            a.trade_suspended_by_user,
+            a.trading_blocked,
+            a.transfers_blocked)
+        return account
 
 
     def requestAssets(self, status='active', asset_class='us_equity'):
@@ -44,17 +58,20 @@ class Data(object):
         Requests Assets data from Alpaca and returns it as a list of Asset objects.
         '''
         assets = []
-        assets_json = self.api.list_assets(status=status, asset_class=asset_class)
+        assets_json = self.api.list_assets(status=status)
 
         for asset in assets_json:
             assets.append(
                 Asset(
                     asset.id,
-                    asset.asset_class,
+                    getattr(asset, 'class'),
                     asset.exchange,
                     asset.symbol,
                     asset.status,
-                    asset.tradable
+                    asset.tradable,
+                    asset.marginable,
+                    asset.shortable,
+                    asset.easy_to_borrow
                 )
             )
         return assets
@@ -96,7 +113,7 @@ class Data(object):
         date_from = datetime.datetime(
             now.year, now.month, now.day, 0, 0)
         date_to = datetime.datetime(
-            todate.year, todate.month, self.clock.next_close.day + 1, 23, 59)
+            todate.year, todate.month, todate.day, 23, 59)
         earnings_json = yec.earnings_between(date_from, date_to)
         
         for ed in earnings_json:
@@ -147,6 +164,7 @@ class Data(object):
                     order.stop_price,
                     order.filled_avg_price,
                     order.status,
+                    order.extended_hours,
                     self.api
                 )
             )
