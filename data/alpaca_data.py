@@ -1,16 +1,85 @@
-# import datetime
 import pandas as pd
 
 class Account(object):
     '''
-    The accounts API serves important account related information for a given API key, 
-    including account status, funds available for trade, funds available for withdrawal, 
-    and various flags relevant to an account's ability to trade. 
-    An account maybe be blocked for just for trades (trades_blocked flag) or 
-    for both trades and transfers (account_blocked flag) if Alpaca identifies the account to 
-    engaging in any suspicious activity. Also, in accordance with FINRA's pattern day trading rule, 
-    an account may be flagged for pattern day trading (pattern_day_trader flag), 
-    which would inhibit an account from placing any further day-trades.
+    id
+        string<uuid>
+        Account ID.
+    account_number
+        string
+        Account number.
+    status
+        string<account_status>
+        See Account Status
+    currency
+        string
+        “USD”
+    cash
+        string<number>
+        Cash balance
+    portfolio_value
+        string<number>
+        Total value of cash + holding positions (This field is deprecated. It is equivalent to the equity field.)
+    pattern_day_trader
+        boolean
+        Whether or not the account has been flagged as a pattern day trader
+    trade_suspended_by_user
+        boolean
+        User setting. If true, the account is not allowed to place orders.
+    trading_blocked
+        boolean
+        If true, the account is not allowed to place orders.
+    transfers_blocked
+        boolean
+        If true, the account is not allowed to request money transfers.
+    account_blocked
+        boolean
+        If true, the account activity by user is prohibited.
+    created_at
+        string<timestamp>
+        Timestamp this account was created at
+    shorting_enabled
+        boolean
+        Flag to denote whether or not the account is permitted to short
+    long_market_value
+        string<number>
+        Real-time MtM value of all long positions held in the account
+    short_market_value
+        string<number>
+        Real-time MtM value of all short positions held in the account
+    equity
+        string<number>
+        Cash + long_market_value + short_market_value
+    last_equity
+        string<number>
+        Equity as of previous trading day at 16:00:00 ET
+    multiplier
+        string<number>
+        Buying power multiplier that represents account margin classification; valid values 1 (standard limited margin account with 1x buying power), 2 (reg T margin account with 2x intraday and overnight buying power; this is the default for all non-PDT accounts with $2,000 or more equity), 4 (PDT account with 4x intraday buying power and 2x reg T overnight buying power)
+    buying_power
+        string<number>
+        Current available $ buying power; If multiplier = 4, this is your daytrade buying power which is calculated as (last_equity - (last) maintenance_margin) * 4; If multiplier = 2, buying_power = max(equity – initial_margin,0) * 2; If multiplier = 1, buying_power = cash
+    initial_margin
+        string<number>
+        Reg T initial margin requirement (continuously updated value)
+    maintenance_margin
+        string<number>
+        Maintenance margin requirement (continuously updated value)
+    sma
+        string<number>
+        Value of special memorandum account (will be used at a later date to provide additional buying_power)
+    daytrade_count
+        string<int>
+        The current number of daytrades that have been made in the last 5 trading days (inclusive of today)
+    last_maintenance_margin
+        string<number>
+        Your maintenance margin requirement on the previous trading day
+    daytrading_buying_power
+        string<number>
+        Your buying power for day trades (continuously updated value)
+    regt_buying_power
+        string<number>
+        Your buying power under Regulation T (your excess equity - equity minus margin value - times your margin multiplier)
     '''
     def __init__(
         self,
@@ -85,9 +154,32 @@ class Account(object):
 
 class Asset(object):
     '''
-    The assets API serves as the master list of assets available for trade and data consumption from Alpaca. 
-    Assets are sorted by asset class, exchange and symbol. Some assets are only available for data consumption via 
-    Polygon, and are not tradable with Alpaca. These assets will be marked with the flag tradable=false.
+    id
+        string<uuid>
+        Asset ID.
+    class
+        string
+        “us_equity”
+    exchange
+        string
+        AMEX, ARCA, BATS, NYSE, NASDAQ or NYSEARCA
+    symbol
+        string
+    status
+        string
+        active or inactive
+    tradable
+        boolean
+        Asset is tradable on Alpaca or not.
+    marginable
+        boolean
+        Asset is marginable or not.
+    shortable
+        boolean
+        Asset is shortable or not.
+    easy_to_borrow
+        boolean
+        Asset is easy-to-borrow or not (filtering for easy_to_borrow = True is the best way to check whether the name is currently available to short at Alpaca).
     '''
     def __init__(
         self, 
@@ -120,10 +212,15 @@ class Asset(object):
 
 class Calendar(object):
     '''
-    The calendar API serves the full list of market days from 1970 to 2029. 
-    It can also be queried by specifying a start and/or end time to narrow down the results. 
-    In addition to the dates, the response also contains the specific open and close times for the market days, 
-    taking into account early closures.
+    date
+        string
+        Date string in “%Y-%m-%d” format
+    open
+        string
+        The time the market opens at on this date in “%H:%M” format
+    close
+        string
+        The time the market closes at on this date in “%H:%M” format
     '''
 
     def __init__(self, date, _open, close):
@@ -141,8 +238,18 @@ class Calendar(object):
 
 class Clock(object):
     '''
-    The clock API serves the current market timestamp, whether or not the market is currently open, 
-    as well as the times of the next market open and close.
+    timestamp
+        string<timestamp>
+        Current timestamp
+    is_open
+        boolean
+        Whether or not the market is open
+    next_open
+        string<timestamp
+        Next market open timestamp
+    next_close
+        string<timestamp>
+        Next market close timestamp
     '''
 
     def __init__(
@@ -255,49 +362,60 @@ class Clock(object):
 
 class Order(object):
     '''
-    An order executed through Alpaca can experience several status changes during its lifecycle. 
-    These most common statuses are described in detail below:
-
-    new
-    The order has been received by Alpaca, and routed to exchanges for execution. 
-    This is the usual initial state of an order.
-    partially_filled
-    The order has been partially filled.
-    filled
-    The order has been filled, and no further updates will occur for the order.
-    done_for_day
-    The order is done executing for the day, and will not receive further updates until the next trading day.
-    canceled
-    The order has been canceled, and no further updates will occur for the order. 
-    This can be either due to a cancel request by the user, or the order has been canceled by 
-    the exchanges due to its time-in-force.
-    expired
-    The order has expired, and no further updates will occur for the order.
-    Less common states are described below. Note that these states only occur on very rare occasions, 
-    and most users will likely never see their orders reach these states:
-
-    accepted
-    The order has been received by Alpaca, but hasn't yet been routed to exchanges. 
-    This state only occurs on rare occasions.
-    pending_new
-    The order has been received by Alpaca, and routed to the exchanges, but has not yet been accepted for execution. 
-    This state only occurs on rare occasions.
-    accepted_for_bidding
-    The order has been received by exchanges, and is evaluated for pricing. This state only occurs on rare occasions.
-    pending_cancel
-    The order is waiting to be canceled. This state only occurs on rare occasions.
-    stopped
-    The order has been stopped, and a trade is guaranteed for the order, usually at a stated price or better, 
-    but has not yet occurred. This state only occurs on rare occasions.
-    rejected
-    The order has been rejected, and no further updates will occur for the order. This state occurs on rare occasions, 
-    and may occur based on various conditions decided by the exchanges.
-    suspended
-    The order has been suspended, and is not eligible for trading. This state only occurs on rare occasions.
-    calculated
-    The order has been completed for the day (either filled or done for day), 
-    but remaining settlement calcuations are still pending. This state only occurs on rare occasions.
-    An order may be canceled through the API up until the point it reaches a state of either filled, canceled, or expired.
+    id
+        string<uuid>
+        order id
+    client_order_id
+        string
+        client unique order id
+    created_at
+        string<timestamp>
+    updated_at
+        string<timestamp> (Nullable)
+    submitted_at
+        string<timestamp> (Nullable)
+    filled_at
+        string<timestamp> (Nullable)
+    expired_at
+        string<timestamp> (Nullable)
+    canceled_at
+        string<timestamp> (Nullable)
+    asset_id
+        string<uuid>
+        asset ID
+    symbol
+        string
+        Asset symbol
+    asset_class
+        string
+        Asset class
+    qty
+        string<number>
+        Ordered quantity
+    filled_qty
+        string<number>
+        Filled quantity
+    type
+        string<order_type>
+        Valid values: market, limit, stop, stop_limit
+    side
+        string<side>
+        Valid values: buy, sell
+    time_in_force
+        string<time_in_force>
+        See Orders page
+    limit_price
+        string<number> (Nullable)
+        Limit price
+    stop_price
+        string<number> (Nullable)
+        Stop price
+    status
+        string<order_status>
+        See Orders page
+    extended_hours
+        boolean
+        If true, eligible for execution outside regular trading hours.
     '''
 
     def __init__(
@@ -363,10 +481,54 @@ class Order(object):
 
 class Position(object):
     '''
-    The positions API provides information about an account's current open positions. 
-    The response will include information such as cost basis, shares traded, and market value, 
-    which will be updated live as price information is updated. Once a position is closed, 
-    it will no longer be queryable through this API.
+    asset_id
+        string<uuid>
+        Asset ID
+    symbol
+        string
+        Symbol name of the asset
+    exchange
+        string
+        Exchange name of the asset
+    asset_class
+        string
+        Asset class name
+    avg_entry_price
+        string
+        Average entry price of the position
+    qty
+        string<int>
+        The number of shares
+    side
+        string
+        “long”
+    market_value
+        string<number>
+        Total dollar amount of the position
+    cost_basis
+        string<number>
+        Total cost basis in dollar
+    unrealized_pl
+        string<number>
+        Unrealized profit/loss in dollars
+    unrealized_plpc
+        string<number>
+        Unrealized profit/loss percent (by a factor of 1)
+    unrealized_intraday_pl
+        string<number>
+        Unrealized profit/loss in dollars for the day
+    unrealized_intraday_plpc
+        string<number>
+        Unrealized profit/loss percent (by a factor of 1)
+    current_price
+        string<number>
+        Current asset price per share
+    lastday_price
+        string<number>
+        Last day’s asset price per share based on the closing value of the last trading day
+    change_today
+        string<number>
+        Percent change from last day price (by a factor of 1)
     '''
     def __init__(
         self,
