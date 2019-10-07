@@ -1,5 +1,5 @@
 from . import Account, Asset, Calendar, Clock, EarningsDate, Order, Position, PolygonSymbol, Filter
-from ..yahoo_earnings_calendar import YahooEarningsCalendar
+from .yahoo_earnings_calendar import YahooEarningsCalendar
 import datetime
 import pandas as pd
 
