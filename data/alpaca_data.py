@@ -153,12 +153,14 @@ class Clock(object):
         self.is_open = is_open
         self.next_open = next_open
         self.next_close = next_close
-        
+    
+    '''
+    afterMarketClose and afterMarketOpen these methods will not specify a day due to these dates changing if the data is pulled after market opens or closes to the next date.
+    '''
     def afterMarketClose(self, timezone='America/New_York', hour=0, minute=0, second=0):
         now = pd.Timestamp.now(tz=timezone)
         nextClose = self.next_close
-        if( now.day == nextClose.day and
-            now.hour == nextClose.hour + hour and 
+        if( now.hour == nextClose.hour + hour and 
             now.minute == nextClose.minute + minute and 
             now.second == nextClose.second + second):
             return True
@@ -167,8 +169,7 @@ class Clock(object):
     def afterMarketOpen(self, timezone='America/New_York', hour=0, minute=0, second=0):
         now = pd.Timestamp.now(tz=timezone)
         nextOpen = self.next_open
-        if( now.day == nextOpen.day and
-            now.hour == nextOpen.hour + hour and 
+        if( now.hour == nextOpen.hour + hour and 
             now.minute == nextOpen.minute + minute and 
             now.second == nextOpen.second + second):
             return True
@@ -178,8 +179,7 @@ class Clock(object):
         now = pd.Timestamp.now(tz=timezone)
         nextOpen = self.next_open
         nextClose = self.next_close
-        if( now.day == nextOpen.day and
-            now.hour >= nextOpen.hour and
+        if( now.hour >= nextOpen.hour and
             now.hour <= nextClose.hour and
             now.second == second):
             if ((nextClose.hour == now.hour and
@@ -201,8 +201,7 @@ class Clock(object):
         now = pd.Timestamp.now(tz=timezone)
         nextOpen = self.next_open
         nextClose = self.next_close
-        if( now.day == nextOpen.day and
-            now.hour >= nextOpen.hour and
+        if( now.hour >= nextOpen.hour and
             now.hour <= nextClose.hour and
             now.minute == minute and
             now.second == second):
