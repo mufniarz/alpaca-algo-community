@@ -222,7 +222,6 @@ class Calendar(object):
         string
         The time the market closes at on this date in “%H:%M” format
     '''
-
     def __init__(self, date, _open, close):
         """Return a new Calendar object."""
         self.date = date
@@ -251,7 +250,6 @@ class Clock(object):
         string<timestamp>
         Next market close timestamp
     '''
-
     def __init__(
         self, 
         timestamp,
@@ -417,7 +415,6 @@ class Order(object):
         boolean
         If true, eligible for execution outside regular trading hours.
     '''
-
     def __init__(
         self,
         id,
