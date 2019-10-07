@@ -68,7 +68,10 @@ class Account(object):
 
 
     def canDayTrade(self):
-        '''Checks to see if account can day trade.'''
+        '''
+        Checks to see if account can day trade.
+        Needs to be updated to look at previous date's equity value.
+        '''
         if(float(self.portfolio_value) > 25000.00):
             return True
         return False
